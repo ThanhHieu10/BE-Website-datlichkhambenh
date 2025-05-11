@@ -1,113 +1,138 @@
 const express = require("express");
-import userDoctor from '../controllers/User/user.doctor.controller';
-import KhamBenh from '../model/KhamBenh';
-const { IpnFailChecksum, VNPay, IpnOrderNotFound, IpnInvalidAmount, InpOrderAlreadyConfirmed, IpnSuccess, IpnUnknownError, ignoreLogger, VerifyReturnUrl } = require("vnpay");
+import userDoctor from "../controllers/User/user.doctor.controller";
+import KhamBenh from "../model/KhamBenh";
+
+//import controller
+const { doanhThu } = require("../../controllers/PhongKham/revenue.controller");
+const { xacNhanLich, updateTTBN } = require("../PhongKham/status.controller");
+const {
+  datLichKham,
+  datLichKhamTTVNPay,
+  getLichHen,
+  findAllLichHen,
+  findAllLichHenByDoctor,
+  handleHuyOrder,
+  deleteLichHen,
+} = require("../PhongKham/appointment.controller");
+const {
+  fetchAllChuyenKhoa,
+  fetchChuyenKhoaByID,
+  createChuyenKhoa,
+  updateChuyenKhoa,
+  deleteChuyenKhoa,
+} = require("../PhongKham/specialty.controller");
+const {
+  fetchAllChucVu,
+  createChucVu,
+  updateChucVu,
+  deleteChucVu,
+} = require("../PhongKham/position.controller");
+const {
+  fetchAllPhongKham,
+  fetchPhongKhamByID,
+  createPhongKham,
+  updatePhongKham,
+  deletePhongKham,
+} = require("../PhongKham/clinic.controller");
+const {
+  fetchAllThoiGianGio,
+  addTimeKhamBenhDoctor,
+  deleteOldTimeSlots,
+  getTimeSlotsByDoctorAndDate,
+} = require("../PhongKham/timeSlot.controller");
+
 const router = express.Router();
 
-// get all doctor
+//Route cho bác sĩ
+router.post("/create-doctor", userDoctor.createDoctor);
 router.get("/fetch-all-doctor", userDoctor.fetchAllDoctor);
 // find doctor by id
 router.get("/fetch-doctor-by-id", userDoctor.fetchAllDoctorById);
-// route create doctor
-router.post("/create-doctor", userDoctor.createDoctor);
-// route update doctor
 router.put("/update-doctor", userDoctor.updateDoctor);
-// route delete doctor
 router.delete("/delete-doctor/:id", userDoctor.deleteDoctor);
-
-
-// get all Chuyên khoa
-router.get("/fetch-all-chuyen-khoa", userDoctor.fetchAllChuyenKhoa);
-// get by id
-router.get("/fetch-chuyen-khoa-by-id", userDoctor.fetchChuyenKhoaByID);
-// route create Chuyên khoa
-router.post("/create-chuyen-khoa", userDoctor.createChuyenKhoa);
-// route delete Chuyên khoa
-router.delete("/delete-chuyen-khoa/:id", userDoctor.deleteChuyenKhoa);
-// route update Chuyên khoa
-router.put("/update-chuyen-khoa", userDoctor.updateChuyenKhoa);
-
-
-// get all Chức vụ
-router.get("/fetch-all-chuc-vu", userDoctor.fetchAllChucVu);
-// route create Chức vụ
-router.post("/create-chuc-vu", userDoctor.createChucVu);
-// route update Chức vụ
-router.put("/update-chuc-vu", userDoctor.updateChucVu);
-// route delete Chức vụ
-router.delete("/delete-chuc-vu/:id", userDoctor.deleteChucVu);
-
-
-// get all phòng khám
-router.get("/fetch-all-phong-kham", userDoctor.fetchAllPhongKham);
-// route create phòng khám
-router.post("/create-phong-kham", userDoctor.createPhongKham);
-// route delete phòng khám
-router.delete("/delete-phong-kham/:id", userDoctor.deletePhongKham);
-router.delete("/delete-lich-hen/:id", userDoctor.deleteLichHen);
-// route update Chức vụ
-router.put("/update-phong-kham", userDoctor.updatePhongKham);
-
-// fetch all thoi gian gio
-router.get("/fetch-all-time-gio", userDoctor.fetchAllThoiGianGio);
-// API để lấy thời gian khám của bác sĩ theo ngày
-router.get("/get-time-slots", userDoctor.getTimeSlotsByDoctorAndDate);
-// them thoi gian kham benh
-router.post("/add-time", userDoctor.addTimeKhamBenhDoctor);
-// xóa lịch trình cũ đi
-router.post('/delete-old-time-slots', userDoctor.deleteOldTimeSlots);
-// tìm ra doctor để hiển thị chi tiết
-router.get('/view-doctor', userDoctor.fetchDoctorById);
+//thông tin bác sĩ
+router.get("/view-doctor", userDoctor.fetchDoctorById);
 // hiển thị info doctor kèm theo thgian khám cho page đặt lịch khám
-router.get('/page-dat-lich-kham', userDoctor.fetchDoctorByNgayGio);
-// dat lich kham
-router.post("/dat-lich-kham", userDoctor.datLichKham);
-router.post("/dat-lich-kham-vnpay", userDoctor.datLichKhamTTVNPay);
-// get lich hen
-router.get("/lich-hen", userDoctor.getLichHen);
-
-
+router.get("/page-dat-lich-kham", userDoctor.fetchDoctorByNgayGio);
 // tim bac si thong qua id chuyen khoa
 router.get("/doctor-chuyen-khoa", userDoctor.fetchDoctorByChuyenKhoa);
-
-router.post("/huy-order", userDoctor.handleHuyOrder);
-router.get("/find-all-order", userDoctor.findAllLichHen)
-router.get("/find-all-order-by-doctor", userDoctor.findAllLichHenByDoctor)
-
-router.get("/fetch-phong-kham-by-id", userDoctor.fetchPhongKhamByID);
 router.get("/doctor-phong-kham", userDoctor.fetchDoctorByPhongKham);
 
-router.put("/edit-xacnhan-lich", userDoctor.xacNhanLich);
-router.put("/edit-thongtinkham", userDoctor.updateTTBN);
-router.post("/thong-ke", userDoctor.doanhThu);
+//Route Chuyên khoa
+router.get("/fetch-all-chuyen-khoa", fetchAllChuyenKhoa);
+// get by id
+router.get("/fetch-chuyen-khoa-by-id", fetchChuyenKhoaByID);
+router.post("/create-chuyen-khoa", createChuyenKhoa);
+router.delete("/delete-chuyen-khoa/:id", deleteChuyenKhoa);
+router.put("/update-chuyen-khoa", updateChuyenKhoa);
 
-router.get('/vnpay_return', async (req, res) => {
-    const vnp_TxnRef = req.query.vnp_TxnRef; // Lấy mã giao dịch từ callback
-    const vnp_ResponseCode = req.query.vnp_ResponseCode; // Lấy mã phản hồi từ VNPay
+// Route Chức vụ
+router.get("/fetch-all-chuc-vu", fetchAllChucVu);
+router.post("/create-chuc-vu", createChucVu);
+router.put("/update-chuc-vu", updateChucVu);
+router.delete("/delete-chuc-vu/:id", deleteChucVu);
 
-    console.log("vnp_TxnRef: ", vnp_TxnRef);
+//Route phòng khám
+router.get("/fetch-all-phong-kham", fetchAllPhongKham);
+router.get("/fetch-phong-kham-by-id", fetchPhongKhamByID);
+router.post("/create-phong-kham", createPhongKham);
+router.put("/update-phong-kham", updatePhongKham);
+router.delete("/delete-phong-kham/:id", deletePhongKham);
 
-    if (vnp_ResponseCode === '00') { // '00' là mã thành công
-        // So sánh vnp_TxnRef với _id trong model Order
-        const order = await KhamBenh.findById(vnp_TxnRef);
-        if (order) {
-            // Cập nhật trạng thái đơn hàng
-            order.trangThaiXacNhan = true;
-            order.trangThaiThanhToan = true;
-            await order.save();
+//Route đặt lịch
+router.post("/dat-lich-kham", datLichKham);
+router.post("/dat-lich-kham-vnpay", datLichKhamTTVNPay);
 
-            res.render('tbThanhToan.ejs');
+//Route lịch khám
+router.get("/find-all-order", findAllLichHen);
+router.get("/find-all-order-by-doctor", findAllLichHenByDoctor);
+router.delete("/delete-lich-hen/:id", deleteLichHen);
+router.get("/lich-hen", getLichHen);
+//Route hủy lịch khám
+router.post("/huy-order", handleHuyOrder);
+//Route cho bác sĩ update lịch khám
+router.put("/edit-xacnhan-lich", xacNhanLich);
+router.put("/edit-thongtinkham", updateTTBN);
 
-        } else {
-            res.status(404).send('Không tìm thấy đơn hàng');
-        }
+//Route cho bác sĩ lấy lịch khám
+// fetch all thoi gian gio
+router.get("/fetch-all-time-gio", fetchAllThoiGianGio);
+// them thoi gian kham benh
+router.post("/add-time", addTimeKhamBenhDoctor);
+// xóa lịch trình cũ
+router.post("/delete-old-time-slots", deleteOldTimeSlots);
+// Thời gian khám của bác sĩ theo ngày
+router.get("/get-time-slots", getTimeSlotsByDoctorAndDate);
+
+//Route doanh thu
+router.post("/thong-ke", doanhThu);
+
+//Route thanh toán vnpay
+router.get("/vnpay_return", async (req, res) => {
+  const vnp_TxnRef = req.query.vnp_TxnRef; // Lấy mã giao dịch từ callback
+  const vnp_ResponseCode = req.query.vnp_ResponseCode; // Lấy mã phản hồi từ VNPay
+
+  console.log("vnp_TxnRef: ", vnp_TxnRef);
+
+  if (vnp_ResponseCode === "00") {
+    // '00' là mã thành công
+    // So sánh vnp_TxnRef với _id trong model Order
+    const order = await KhamBenh.findById(vnp_TxnRef);
+    if (order) {
+      // Cập nhật trạng thái đơn hàng
+      order.trangThaiXacNhan = true;
+      order.trangThaiThanhToan = true;
+      await order.save();
+
+      res.render("tbThanhToan.ejs");
     } else {
-        res.send('Thanh toán không thành công, đã đặt đơn nhưng chưa được thanh toán');
-        // res.status(400).json({
-        //     message: 'Thanh toán không thành công, đã đặt đơn nhưng chưa được thanh toán',
-        //     redirectUrl: '/mycart'
-        // });
+      res.status(404).send("Không tìm thấy đơn hàng");
     }
+  } else {
+    res.send(
+      "Thanh toán không thành công, đã đặt đơn nhưng chưa được thanh toán"
+    );
+  }
 });
 
 module.exports = router;
